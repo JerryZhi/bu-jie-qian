@@ -18,15 +18,18 @@ import {
 } from "./domain";
 import "./phone.css";
 
-function Signal({ count }: { count: number }) {
+function Signal({ count, network }: { count: number; network: Config["network"] }) {
   return (
-    <span className="signal" aria-label={`${count} 格信号`}>
-      {[1, 2, 3, 4].map((n) => (
-        <i
-          key={n}
-          style={{ height: 4 + n * 2.5, opacity: n <= count ? 1 : 0.2 }}
-        />
-      ))}
+    <span className="cellular-status" aria-label={`${network === "wifi" ? "蜂窝" : network}，${count} 格信号`}>
+      {network !== "wifi" && <b className="network-text" aria-hidden="true">{network}</b>}
+      <span className="signal" aria-hidden="true">
+        {[1, 2, 3, 4].map((n) => (
+          <i
+            key={n}
+            style={{ height: 3 + n * 2.5, opacity: n <= count ? 1 : 0.2 }}
+          />
+        ))}
+      </span>
     </span>
   );
 }
@@ -73,26 +76,24 @@ export default function PhoneScreen({
           <span>1台</span>
         </span>
         <div className="status-indicators">
-          <Signal count={config.signal} />
-          {config.network === "wifi" ? (
+          <Signal count={config.signal} network={config.network} />
+          {config.network === "wifi" && (
             <svg
               className="status-wifi"
-              width="18"
+              width="16"
               height="16"
-              viewBox="0 0 18 16"
+              viewBox="0 0 16 16"
               fill="none"
               aria-label="Wi-Fi"
             >
               <path
-                d="M1 4Q9-2 17 4M4 8Q9 4 14 8M7 11Q9 9.5 11 11"
+                d="M1.5 5.5a9.2 9.2 0 0 1 13 0M4 8a5.65 5.65 0 0 1 8 0M6.5 10.5a2.12 2.12 0 0 1 3 0"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="1.8"
                 strokeLinecap="round"
               />
-              <circle cx="9" cy="14" r="1.3" fill="currentColor" />
+              <circle cx="8" cy="13" r="1" fill="currentColor" />
             </svg>
-          ) : (
-            <b className="network-text">{config.network}</b>
           )}
           <span
             className={`battery-status ${config.charging ? "charging" : battery <= 20 ? "low" : ""}`}
@@ -100,42 +101,42 @@ export default function PhoneScreen({
           >
             <svg
               className="phone-battery"
-              width="24"
+              width="28"
               height="16"
-              viewBox="0 0 24 16"
+              viewBox="0 0 28 16"
               fill="none"
               aria-hidden="true"
             >
               <rect
                 x="0.75"
-                y="0.75"
-                width="20.5"
-                height="14.5"
-                rx="2.5"
+                y="2.75"
+                width="24.5"
+                height="10.5"
+                rx="1.5"
                 stroke="currentColor"
                 strokeWidth="1.5"
               />
               <rect
-                x="22"
-                y="5"
+                x="26"
+                y="6"
                 width="2"
-                height="6"
+                height="4"
                 rx="0.75"
                 fill="currentColor"
               />
               <rect
                 className="battery-fill"
                 x="2.5"
-                y="2.5"
-                width={(17 * battery) / 100}
-                height="11"
-                rx="1"
+                y="4.5"
+                width={(21 * battery) / 100}
+                height="7"
+                rx="0.5"
                 fill={config.charging ? "#51a66e" : battery <= 20 ? "#cc3434" : "#444"}
               />
               {config.charging && (
                 <path
                   className="charging-bolt"
-                  d="M12 3 8 8h3l-1 5 5-7h-3z"
+                  d="M14 4 10 8.5h3l-1 3.5 5-5.5h-3z"
                   fill="#137c3a"
                   stroke="#fff"
                   strokeWidth="0.6"

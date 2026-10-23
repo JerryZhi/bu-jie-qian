@@ -48,13 +48,19 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  height: 16px;
+}
+.cellular-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 16px;
 }
 .signal {
   display: flex;
-  gap: 1.5px;
+  gap: 1px;
   align-items: flex-end;
-  height: 16px;
-  padding: 1px 0;
+  height: 13px;
 }
 .signal i {
   display: block;
@@ -64,19 +70,21 @@
 }
 .network-text {
   font-size: 10px;
+  line-height: 16px;
+  font-weight: 600;
 }
 /* All status icons share a 16px box; numbers are ordinary text outside the SVG. */
 .battery-status {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   height: 16px;
   margin-left: 1px;
   flex-shrink: 0;
 }
 .phone-battery {
   display: block;
-  width: 24px;
+  width: 28px;
   height: 16px;
   color: #444;
 }
