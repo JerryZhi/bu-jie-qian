@@ -1,0 +1,13 @@
+node_modules/
+dist/
+output/
+.playwright-mcp/
+*.tsbuildinfo
+*.local
+.env
+.env.*
+!.env.example
+.openai/
+sites/
+*.pem
+*.key

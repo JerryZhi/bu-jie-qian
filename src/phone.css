@@ -1,0 +1,340 @@
+/* Screenshot template: fixed geometry, independent of the editor's responsive layout. */
+.phone-screen {
+  width: 390px;
+  height: 844px;
+  background: #fff;
+  border-radius: 38px;
+  overflow: hidden;
+  position: relative;
+  font-family: Arial, "Microsoft YaHei", "PingFang SC", sans-serif;
+  color: #2c2c2c;
+  font-weight: 400;
+  line-height: 1.5;
+  isolation: isolate;
+}
+.status-bar {
+  position: relative;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px 0 31px;
+  color: #333;
+}
+.status-bar > strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.status-island {
+  position: absolute;
+  left: 142px;
+  top: 10px;
+  width: 105px;
+  height: 33px;
+  background: #000;
+  color: #fff;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 11px;
+  font-size: 15px;
+}
+.status-island > svg {
+  color: #3483ef;
+  transform: rotate(-15deg);
+}
+.status-indicators {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.signal {
+  display: flex;
+  gap: 1.5px;
+  align-items: flex-end;
+  height: 14px;
+}
+.signal i {
+  display: block;
+  width: 2.5px;
+  background: currentColor;
+  border-radius: 0.5px;
+}
+.network-text {
+  font-size: 10px;
+}
+.phone-battery {
+  position: relative;
+  border: 1px solid #999;
+  border-radius: 3px;
+  width: 23px;
+  height: 12px;
+  margin-left: 1px;
+  padding: 1px;
+  display: flex;
+  align-items: center;
+}
+.phone-battery:after {
+  content: "";
+  width: 2px;
+  height: 5px;
+  background: #999;
+  border-radius: 0 2px 2px 0;
+  position: absolute;
+  right: -3px;
+  top: 2.5px;
+}
+.phone-battery > span {
+  height: 100%;
+  background: #444;
+  border-radius: 1px;
+}
+.phone-battery b {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  text-shadow: 0 0 2px #222;
+}
+.phone-battery.low > span {
+  background: #cc3434;
+}
+.phone-battery.low b {
+  color: #222;
+  text-shadow: 0 0 2px #fff;
+}
+.phone-battery.charging > span {
+  background: #51a66e;
+}
+.phone-nav {
+  position: relative;
+  height: 45px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #697a81;
+  border-bottom: 1px solid #e1e1e1;
+}
+.phone-nav > span {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  white-space: nowrap;
+}
+.phone-nav > div {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.phone-section-gap {
+  height: 10px;
+  background: #f4f4f4;
+}
+.phone-section-gap.first-gap {
+  height: 12px;
+}
+.balance-summary {
+  height: 151px;
+  padding: 26px 15px 0;
+  text-align: center;
+}
+.balance-label {
+  color: #737373;
+  font-size: 14px;
+}
+.balance-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 3px;
+  height: 43px;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 43px;
+  letter-spacing: -0.6px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.balance-value .currency-symbol {
+  color: #686868;
+  margin-right: 4px;
+}
+.balance-value.compact {
+  font-size: 25px;
+  gap: 4px;
+}
+.interest-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-top: 2px;
+  height: 23px;
+  font-size: 13px;
+  color: #777;
+  white-space: nowrap;
+}
+.interest-summary strong {
+  font-weight: 400;
+  color: #ce3934;
+}
+.interest-summary > svg {
+  color: #397fb3;
+  margin-left: 4px;
+}
+.summary-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 5px;
+  height: 28px;
+}
+.alias-label {
+  font-size: 13px;
+  color: #346bb2;
+}
+.bank-rows {
+  margin: 0;
+}
+.bank-rows > div {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+}
+.bank-rows dt {
+  color: #787878;
+  flex-shrink: 0;
+}
+.bank-rows dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 400;
+  color: #303030;
+  min-width: 0;
+}
+.account-details {
+  height: 300px;
+  padding: 0 15px;
+}
+.product-row dd {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.bank-rows .placeholder-account {
+  font-size: 13px;
+}
+.account-toggle-row {
+  display: flex;
+  height: 48px;
+  justify-content: space-between;
+  align-items: center;
+  color: #787878;
+  font-size: 13px;
+}
+.static-switch {
+  width: 41px;
+  height: 25px;
+  border: 1px solid #e2e2e2;
+  border-radius: 20px;
+  padding: 1px;
+  display: flex;
+  align-items: center;
+}
+.static-switch i {
+  display: block;
+  width: 21px;
+  height: 21px;
+  border: 1px solid #f5f5f5;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px #0002;
+}
+.date-details {
+  height: 179px;
+  padding: 0 15px;
+}
+.deposit-timeline {
+  margin: 22px 43px 0;
+}
+.timeline-track {
+  height: 6px;
+  border-radius: 6px;
+  background: #e6e6e6;
+  overflow: hidden;
+}
+.timeline-track > span {
+  display: block;
+  height: 6px;
+  min-width: 10px;
+  max-width: 100%;
+  border-radius: inherit;
+  background: #d60000;
+}
+.timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+.timeline-labels > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.timeline-labels > div:last-child {
+  text-align: right;
+}
+.timeline-labels strong {
+  font-size: 13px;
+  font-weight: 400;
+  color: #111;
+}
+.timeline-labels span {
+  color: #777;
+  font-size: 11px;
+}
+.renewal-details {
+  padding: 0 15px;
+  height: 43px;
+}
+.phone-footer {
+  background: #f4f4f4;
+  height: 34px;
+  text-align: right;
+  padding: 8px 15px 0;
+  color: #969696;
+}
+.phone-footer p {
+  font-size: 11px;
+  line-height: 16.5px;
+  white-space: nowrap;
+}
+.footer-text-viewport {
+  height: 16.5px;
+  overflow: hidden;
+}
+.phone-footer.is-cropped {
+  padding-top: 14px;
+}
+.phone-footer.is-cropped .footer-text-viewport {
+  height: 8.25px;
+}
+.home-indicator {
+  position: absolute;
+  bottom: 5px;
+  left: 119px;
+  width: 152px;
+  height: 3px;
+  border-radius: 4px;
+  background: #666;
+}
