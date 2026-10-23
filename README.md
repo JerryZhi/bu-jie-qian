@@ -19,7 +19,8 @@ npm run dev
 - 无保存配置时，手机时间使用访问时的浏览器本地时间，开户日使用本地日期的 16 天前。重置会重新生成这些默认值；已保存的自定义参数优先恢复。
 - 手机时间、电量、充电状态、Wi-Fi / 4G / 5G、信号强度均可调整。
 - 导出 1×（390 × 844）、2×（780 × 1688）或 3×（1170 × 2532）的 PNG。
-- 模板参考提供的截图布局：白底列表、居中余额、红色利息、开户与到期日期、期限进度条。卡号前缀为 `6212****`，账户前缀为 `3602****`；尾号可分别自定义为 4 位数字，支持前导零，默认均为 `8888`。
+- 模板参考提供的截图布局：白底列表、居中余额、红色利息、开户与到期日期、期限进度条。卡号前缀为 `6212****`，账户前缀为 `3602****`；无保存配置时及重置时，各自随机生成 4 位数字尾号，支持前导零。可手动修改或使用“随机生成两个尾号”重新生成，已保存的手动值优先恢复。
+- 状态栏电量百分比显示在电池右侧，图标统一为 16px 高度并垂直居中；电池内用填充量表示电量，低电量显示红色，充电时显示绿色和闪电。
 - 导出包含矩形手机画面，不包含预览中的硬件边框与编辑器。“模拟数据 · 非银行凭证”说明显示在网站界面，不包含在导出图片中。
 - “底部文字半截显示”默认开启，仅裁切底部灰色说明文字，模拟屏幕边界截断内容；关闭后完整显示。预览与 PNG 使用相同裁切效果，输出尺寸不变。
 - 有效配置自动保存在当前浏览器的 localStorage 中。刷新后恢复；“重置 → 清空并重置”可删除保存的配置。
@@ -39,14 +40,18 @@ React + TypeScript + Vite；PNG 使用 [html-to-image](https://github.com/bubkoo
 
 推荐使用最新版 Chrome / Edge。PNG 与当前系统的中文字体保持一致，跨系统字体可能略有差异。本项目为“存笺”生成的模拟界面，不使用真实银行标志或账户。
 
-## 自托管部署
+## 发布与回滚
 
-这是纯静态应用，不需要后端、数据库或运行时密钥。
+正式站点：https://jieqian.yeedit.xyz/ 。源码：https://github.com/JerryZhi/deposit-studio ，使用 `main` 分支。
 
-1. 使用 Node.js 22.18+ 执行 `npm ci`、`npm test`、`npm run build`。
-2. 将 `dist/` 的内容上传到服务器独立的发布目录，并让 `/var/www/deposit-studio/current` 符号链接指向该目录。
-3. 将域名的 DNS 记录指向服务器。若需直接访问服务器，使用 DNS only，不启用 CDN 代理。
-4. 使用 Nginx 提供 HTTP 服务，在 `/var/www/letsencrypt` 提供 ACME 验证文件，再通过 Certbot webroot 验证申请证书。
-5. 将 `deploy/nginx.conf` 中的 `example.com` 替换为实际域名，安装配置后执行 `nginx -t`，通过后 reload Nginx。
+按用户要求，后续使用 GitHub → SSH vmrack 发布，不再使用 ChatGPT Sites。SSH 别名为 `new-vmrack`。服务器已有 Nginx 静态托管与 HTTPS，保留 Cloudflare 橙云代理和现有 DNS 配置。
 
-后续发布只需上传新的 `dist/` 并切换 `current`。保留上一个发布目录即可回滚。Certbot 定时续期后需 reload Nginx。此公开仓库不包含 Sites 托管元数据、部署凭证或生成的图片。
+1. 检查差异，运行 `npm test` 和 `npm run build`。
+2. 提交源码并 `git push origin main`，确保构建对应已推送的提交。
+3. 将 `dist` 目录内的文件打成 tar.gz，通过 `scp` 上传到服务器 `/tmp`。
+4. 解压至 `/var/www/deposit-studio/releases/<git-commit>`，检查 `index.html` 和 `assets` 后，以临时符号链接加 `mv -Tf` 原子替换 `/var/www/deposit-studio/current`。
+5. 验证服务器本机 HTTPS 与公网 HTTPS 均返回新 index 和资源，检查页面及 PNG 导出。
+
+Nginx 根目录为 `/var/www/deposit-studio/current`；配置为 `/etc/nginx/sites-available/jieqian.yeedit.xyz`；证书续期使用现有 Certbot webroot `/var/www/letsencrypt`。仅更新静态文件无需重载 Nginx。
+
+发布前记录 `readlink -f /var/www/deposit-studio/current`。发生问题时，将临时符号链接指向这个旧 release，再原子替换 `current` 即可回滚。不要立即删除旧版本。

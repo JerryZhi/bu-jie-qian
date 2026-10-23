@@ -54,6 +54,10 @@ export function addMonths(value: string, months: number): string {
     .slice(0, 10);
 }
 
+export function randomSuffix(): string {
+  return String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+}
+
 export function defaults(now = new Date()): Config {
   const openedAt = new Date(now);
   openedAt.setDate(openedAt.getDate() - 16);
@@ -72,8 +76,8 @@ export function defaults(now = new Date()): Config {
     signal: 4,
     scale: 3,
     cropFooter: true,
-    cardSuffix: "8888",
-    accountSuffix: "8888",
+    cardSuffix: randomSuffix(),
+    accountSuffix: randomSuffix(),
   };
 }
 

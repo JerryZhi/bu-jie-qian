@@ -14,6 +14,7 @@ import {
   LockKeyhole,
   RotateCcw,
   Settings2,
+  Shuffle,
   ShieldCheck,
   Smartphone,
   Sparkles,
@@ -26,6 +27,7 @@ import {
   HEIGHT,
   maturity,
   money,
+  randomSuffix,
   STORAGE_KEY,
   TERMS,
   termLabel,
@@ -445,6 +447,16 @@ export default function App() {
                     />
                   </Field>
                 </div>
+                <button
+                  type="button"
+                  className="text-button random-suffix-button"
+                  onClick={() => {
+                    update("cardSuffix", randomSuffix());
+                    update("accountSuffix", randomSuffix());
+                  }}
+                >
+                  <Shuffle size={13} /> 随机生成两个尾号
+                </button>
                 <div className="estimate-box">
                   <div>
                     <span>

@@ -11,9 +11,13 @@ import {
   validate,
 } from "../src/domain.ts";
 
-test("visit defaults use local wall-clock time and 16 calendar days earlier", () => {
+test("visit defaults use local wall-clock time and 16 calendar days earlier", (t) => {
+  const draws = [0.00125, 0.98765];
+  t.mock.method(Math, "random", () => draws.shift() ?? 0.5);
   const now = new Date(2026, 9, 23, 9, 7);
   const config = defaults(now);
+  assert.equal(config.cardSuffix, "0012");
+  assert.equal(config.accountSuffix, "9876");
   assert.equal(config.time, "09:07");
   assert.equal(config.startDate, "2026-10-07");
   assert.equal(config.endDate, "2029-10-07");
@@ -97,8 +101,8 @@ test("saved configuration is versioned and validated before restoration", () => 
   const migrated = decodeConfig(
     JSON.stringify({ version: 1, config: legacyConfig }),
   );
-  assert.equal(migrated?.cardSuffix, "8888");
-  assert.equal(migrated?.accountSuffix, "8888");
+  assert.match(migrated!.cardSuffix, /^[0-9]{4}$/);
+  assert.match(migrated!.accountSuffix, /^[0-9]{4}$/);
   assert.equal(
     validate({ ...config, cardSuffix: "0012", accountSuffix: "0000" })
       .cardSuffix,

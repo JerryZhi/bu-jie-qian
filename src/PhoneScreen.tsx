@@ -5,8 +5,6 @@ import {
   Info,
   Link2,
   MoreHorizontal,
-  Wifi,
-  Zap,
 } from "lucide-react";
 import {
   estimate,
@@ -26,7 +24,7 @@ function Signal({ count }: { count: number }) {
       {[1, 2, 3, 4].map((n) => (
         <i
           key={n}
-          style={{ height: 4 + n * 2, opacity: n <= count ? 1 : 0.2 }}
+          style={{ height: 4 + n * 2.5, opacity: n <= count ? 1 : 0.2 }}
         />
       ))}
     </span>
@@ -77,23 +75,77 @@ export default function PhoneScreen({
         <div className="status-indicators">
           <Signal count={config.signal} />
           {config.network === "wifi" ? (
-            <Wifi size={16} strokeWidth={2.5} />
+            <svg
+              className="status-wifi"
+              width="18"
+              height="16"
+              viewBox="0 0 18 16"
+              fill="none"
+              aria-label="Wi-Fi"
+            >
+              <path
+                d="M1 4Q9-2 17 4M4 8Q9 4 14 8M7 11Q9 9.5 11 11"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <circle cx="9" cy="14" r="1.3" fill="currentColor" />
+            </svg>
           ) : (
             <b className="network-text">{config.network}</b>
           )}
           <span
-            className={`phone-battery ${config.charging ? "charging" : battery <= 20 ? "low" : ""}`}
+            className={`battery-status ${config.charging ? "charging" : battery <= 20 ? "low" : ""}`}
+            aria-label={`电量 ${errors.battery ? "未知" : `${battery}%`}${config.charging ? "，充电中" : ""}`}
           >
-            <span style={{ width: `${battery}%` }} />
-            <b>
-              {config.charging ? (
-                <Zap size={11} fill="currentColor" />
-              ) : errors.battery ? (
-                "–"
-              ) : (
-                battery
+            <svg
+              className="phone-battery"
+              width="24"
+              height="16"
+              viewBox="0 0 24 16"
+              fill="none"
+              aria-hidden="true"
+            >
+              <rect
+                x="0.75"
+                y="0.75"
+                width="20.5"
+                height="14.5"
+                rx="2.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <rect
+                x="22"
+                y="5"
+                width="2"
+                height="6"
+                rx="0.75"
+                fill="currentColor"
+              />
+              <rect
+                className="battery-fill"
+                x="2.5"
+                y="2.5"
+                width={(17 * battery) / 100}
+                height="11"
+                rx="1"
+                fill={config.charging ? "#51a66e" : battery <= 20 ? "#cc3434" : "#444"}
+              />
+              {config.charging && (
+                <path
+                  className="charging-bolt"
+                  d="M12 3 8 8h3l-1 5 5-7h-3z"
+                  fill="#137c3a"
+                  stroke="#fff"
+                  strokeWidth="0.6"
+                  strokeLinejoin="round"
+                />
               )}
-            </b>
+            </svg>
+            <span className="battery-percentage">
+              {errors.battery ? "–" : `${battery}%`}
+            </span>
           </span>
         </div>
       </div>
