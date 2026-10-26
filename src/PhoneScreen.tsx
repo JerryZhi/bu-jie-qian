@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import type { PreviewEditProps, PreviewField } from "./PreviewEditor";
 import {
   ChevronLeft,
   Headset,
@@ -18,10 +19,23 @@ import {
 } from "./domain";
 import "./phone.css";
 
-function Signal({ count, network }: { count: number; network: Config["network"] }) {
+function Signal({
+  count,
+  network,
+}: {
+  count: number;
+  network: Config["network"];
+}) {
   return (
-    <span className="cellular-status" aria-label={`${network === "wifi" ? "蜂窝" : network}，${count} 格信号`}>
-      {network !== "wifi" && <b className="network-text" aria-hidden="true">{network}</b>}
+    <span
+      className="cellular-status"
+      aria-label={`${network === "wifi" ? "蜂窝" : network}，${count} 格信号`}
+    >
+      {network !== "wifi" && (
+        <b className="network-text" aria-hidden="true">
+          {network}
+        </b>
+      )}
       <span className="signal" aria-hidden="true">
         {[1, 2, 3, 4].map((n) => (
           <i
@@ -37,9 +51,11 @@ function Signal({ count, network }: { count: number; network: Config["network"] 
 export default function PhoneScreen({
   config,
   screenRef,
+  editProps = () => ({}),
 }: {
   config: Config;
   screenRef: RefObject<HTMLDivElement | null>;
+  editProps?: (field: PreviewField) => PreviewEditProps;
 }) {
   const errors = validate(config);
   const values = estimate(config);
@@ -70,34 +86,39 @@ export default function PhoneScreen({
   return (
     <div className="phone-screen" ref={screenRef} data-testid="phone-screen">
       <div className="status-bar">
-        <strong>{errors.time ? "--:--" : config.time}</strong>
+        <strong {...editProps("time")}>
+          {errors.time ? "--:--" : config.time}
+        </strong>
         <span className="status-island" aria-hidden="true">
           <Link2 size={22} />
           <span>1台</span>
         </span>
         <div className="status-indicators">
-          <Signal count={config.signal} network={config.network} />
-          {config.network === "wifi" && (
-            <svg
-              className="status-wifi"
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              aria-label="Wi-Fi"
-            >
-              <path
-                d="M1.5 5.5a9.2 9.2 0 0 1 13 0M4 8a5.65 5.65 0 0 1 8 0M6.5 10.5a2.12 2.12 0 0 1 3 0"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-              <circle cx="8" cy="13" r="1" fill="currentColor" />
-            </svg>
-          )}
+          <span className="connection-status" {...editProps("connection")}>
+            <Signal count={config.signal} network={config.network} />
+            {config.network === "wifi" && (
+              <svg
+                className="status-wifi"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-label="Wi-Fi"
+              >
+                <path
+                  d="M1.5 5.5a9.2 9.2 0 0 1 13 0M4 8a5.65 5.65 0 0 1 8 0M6.5 10.5a2.12 2.12 0 0 1 3 0"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+                <circle cx="8" cy="13" r="1" fill="currentColor" />
+              </svg>
+            )}
+          </span>
           <span
             className={`battery-status ${config.charging ? "charging" : battery <= 20 ? "low" : ""}`}
             aria-label={`电量 ${errors.battery ? "未知" : `${battery}%`}${config.charging ? "，充电中" : ""}`}
+            {...editProps("battery")}
           >
             <svg
               className="phone-battery"
@@ -131,7 +152,13 @@ export default function PhoneScreen({
                 width={(21 * battery) / 100}
                 height="7"
                 rx="0.5"
-                fill={config.charging ? "#51a66e" : battery <= 20 ? "#cc3434" : "#444"}
+                fill={
+                  config.charging
+                    ? "#51a66e"
+                    : battery <= 20
+                      ? "#cc3434"
+                      : "#444"
+                }
               />
               {config.charging && (
                 <path
@@ -163,10 +190,15 @@ export default function PhoneScreen({
         <p className="balance-label">当前存单余额（元）</p>
         <div className={`balance-value ${amount.length > 12 ? "compact" : ""}`}>
           <span className="currency-symbol">¥</span>
-          <span data-testid="preview-amount">{amount}</span>
+          <span data-testid="preview-amount" {...editProps("amount")}>
+            {amount}
+          </span>
           <span>元</span>
         </div>
-        <div className="interest-summary">
+        <div
+          className="interest-summary"
+          title="利息根据金额、年利率和存款期限自动计算"
+        >
           <span>预计到期利息：</span>
           <strong>
             <span data-testid="preview-interest">
@@ -187,15 +219,15 @@ export default function PhoneScreen({
         <dl className="bank-rows">
           <div className="product-row">
             <dt>产品名称</dt>
-            <dd>个人人民币{term}期整存整取存款</dd>
+            <dd {...editProps("months")}>个人人民币{term}期整存整取存款</dd>
           </div>
           <div>
             <dt>存期</dt>
-            <dd>{term}</dd>
+            <dd {...editProps("months")}>{term}</dd>
           </div>
           <div>
             <dt>当前执行年利率</dt>
-            <dd data-testid="preview-rate">
+            <dd data-testid="preview-rate" {...editProps("rate")}>
               {errors.rate
                 ? "—"
                 : `${Number(config.rate).toFixed(Math.max(2, config.rate.split(".")[1]?.length ?? 0))}%`}
@@ -207,13 +239,21 @@ export default function PhoneScreen({
           </div>
           <div>
             <dt>卡号</dt>
-            <dd className="placeholder-account" data-testid="preview-card">
+            <dd
+              className="placeholder-account"
+              data-testid="preview-card"
+              {...editProps("cardSuffix")}
+            >
               6212****{errors.cardSuffix ? "—" : config.cardSuffix}
             </dd>
           </div>
           <div>
             <dt>账户</dt>
-            <dd className="placeholder-account" data-testid="preview-account">
+            <dd
+              className="placeholder-account"
+              data-testid="preview-account"
+              {...editProps("accountSuffix")}
+            >
               3602****{errors.accountSuffix ? "—" : config.accountSuffix}
             </dd>
           </div>
@@ -230,11 +270,13 @@ export default function PhoneScreen({
         <dl className="bank-rows">
           <div>
             <dt>开户日</dt>
-            <dd>{startLabel}</dd>
+            <dd {...editProps("startDate")}>{startLabel}</dd>
           </div>
           <div>
             <dt>到期日</dt>
-            <dd data-testid="preview-end">{endLabel}</dd>
+            <dd data-testid="preview-end" {...editProps("endDate")}>
+              {endLabel}
+            </dd>
           </div>
         </dl>
         <div className="deposit-timeline">
@@ -251,11 +293,15 @@ export default function PhoneScreen({
           <div className="timeline-labels">
             <div>
               <strong>起息日</strong>
-              <span>{startLabel.replaceAll("-", ".")}</span>
+              <span {...editProps("startDate")}>
+                {startLabel.replaceAll("-", ".")}
+              </span>
             </div>
             <div>
               <strong>到期日</strong>
-              <span>{endLabel.replaceAll("-", ".")}</span>
+              <span {...editProps("endDate")}>
+                {endLabel.replaceAll("-", ".")}
+              </span>
             </div>
           </div>
         </div>
@@ -269,7 +315,10 @@ export default function PhoneScreen({
           </div>
         </dl>
       </section>
-      <div className={`phone-footer${config.cropFooter ? " is-cropped" : ""}`}>
+      <div
+        className={`phone-footer${config.cropFooter ? " is-cropped" : ""}`}
+        {...editProps("cropFooter")}
+      >
         <div className="footer-text-viewport">
           <p>本金和利息到期后自动转入活期</p>
         </div>

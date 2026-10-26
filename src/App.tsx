@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toBlob } from "html-to-image";
-import PhoneScreen from "./PhoneScreen";
+import PreviewEditor from "./PreviewEditor";
 import {
   ArrowDownToLine,
   ArrowUpRight,
@@ -154,6 +154,7 @@ export default function App() {
   const [storageMessage, setStorageMessage] = useState(initial.message);
   const [toast, setToast] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [previewEditing, setPreviewEditing] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const screenRef = useRef<HTMLDivElement>(null);
   const resetRef = useRef<HTMLDialogElement>(null);
@@ -213,10 +214,14 @@ export default function App() {
   }
 
   async function exportPng() {
-    if (!screenRef.current || !valid || exporting) return;
+    if (!screenRef.current || !valid || exporting || previewEditing) return;
     setExporting(true);
     try {
       await document.fonts.ready;
+      // Let React remove preview editing affordances before cloning the screen.
+      await new Promise<void>((resolve) =>
+        window.requestAnimationFrame(() => resolve()),
+      );
       const blob = await toBlob(screenRef.current, {
         width: WIDTH,
         height: HEIGHT,
@@ -294,7 +299,7 @@ export default function App() {
               <button
                 className="text-button"
                 onClick={() => setShowReset(true)}
-                disabled={exporting}
+                disabled={exporting || previewEditing}
               >
                 <RotateCcw size={13} />
                 重置
@@ -654,12 +659,26 @@ export default function App() {
                 </div>
                 <div className="phone-container">
                   <div className="phone-frame">
-                    <PhoneScreen config={config} screenRef={screenRef} />
+                    <PreviewEditor
+                      config={config}
+                      screenRef={screenRef}
+                      disabled={exporting}
+                      onEditingChange={setPreviewEditing}
+                      onChange={(patch) => {
+                        hasEdited.current = true;
+                        setConfig((current) => ({ ...current, ...patch }));
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="preview-stage-footer">
                   <Sparkles size={13} />
-                  <span>调整左侧参数，画面即时更新</span>
+                  <span className="preview-edit-hint">
+                    双击画面中的数值或图标，即可修改
+                  </span>
+                  <span className="preview-form-hint">
+                    调整参数，画面即时更新
+                  </span>
                 </div>
               </div>
               <div className="export-footer">
@@ -678,7 +697,10 @@ export default function App() {
                 <button
                   className="export-button"
                   onClick={exportPng}
-                  disabled={!valid || exporting}
+                  disabled={!valid || exporting || previewEditing}
+                  title={
+                    previewEditing ? "请先保存或取消预览中的修改" : undefined
+                  }
                 >
                   {exporting ? (
                     <LoaderCircle size={16} className="spin" />

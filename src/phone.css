@@ -56,6 +56,12 @@
   gap: 2px;
   height: 16px;
 }
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+}
 .signal {
   display: flex;
   gap: 1px;

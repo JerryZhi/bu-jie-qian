@@ -2,6 +2,7 @@ node_modules/
 dist/
 output/
 .playwright-mcp/
+.playwright-cli/
 *.tsbuildinfo
 *.local
 .env
