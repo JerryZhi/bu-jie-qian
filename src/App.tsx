@@ -36,16 +36,6 @@ import {
   type Config,
 } from "./domain";
 
-function Brand({ small = false }: { small?: boolean }) {
-  return (
-    <span className={`brand-mark ${small ? "small" : ""}`} aria-hidden="true">
-      <span />
-      <span />
-      <span />
-    </span>
-  );
-}
-
 function Section({
   number,
   title,
@@ -234,7 +224,7 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `存笺-定期存款示意图-${config.startDate}-${WIDTH * config.scale}x${HEIGHT * config.scale}.png`;
+      link.download = `拒绝借钱-模拟存款截图-${config.startDate}-${WIDTH * config.scale}x${HEIGHT * config.scale}.png`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -256,24 +246,22 @@ export default function App() {
   return (
     <>
       <header className="site-header">
-        <a className="wordmark" href="./" aria-label="存笺首页">
-          <Brand />
-          <span>
-            存笺<span className="wordmark-en">DEPOSIT STUDIO</span>
-          </span>
+        <a className="tool-title" href="./" aria-label="拒绝借钱截图工具首页">
+          <FileImage size={27} aria-hidden="true" />
+          <span>拒绝借钱截图工具</span>
         </a>
         <div className="header-right">
           <span className="local-badge">
             <LockKeyhole size={13} /> 本地工具 <i />
           </span>
-          <span className="version">V 1.0</span>
+          <span className="project-kind">免费 · 个人整活</span>
         </div>
       </header>
       <main className="workspace">
         <div className="intro">
           <div>
             <div className="eyebrow">
-              <span /> SIMPLE INPUT. INSTANT PREVIEW.
+              <span /> 免费使用 · 个人整活 · 没有商业化计划
             </div>
             <h1>
               让你拒绝朋友借钱，<span>更有底气</span>
@@ -654,7 +642,7 @@ export default function App() {
               <div className="preview-stage">
                 <div className="preview-caption">
                   <span className="caption-line" />
-                  <span>YOUR DEPOSIT, YOUR DETAILS</span>
+                  <span>钱都存定期了，这次真借不了</span>
                   <span className="caption-line" />
                 </div>
                 <div className="phone-container">
@@ -719,22 +707,58 @@ export default function App() {
             )}
             <div className="preview-disclaimer">
               <CircleHelp size={15} />
-              <p>
-                <strong>模拟数据 · 非银行凭证</strong>
-                <br />
-                本工具不连接银行，生成图片不代表真实账户或资产证明。
-                <br className="desktop-break" />
-                卡号与账户为固定示例，输入和导出均在浏览器本地完成。
-              </p>
+              <div>
+                <p>
+                  <strong>模拟图片 · 非银行凭证</strong>
+                  <br />
+                  仅供朋友间玩笑、婉拒借钱等非正式聊天，不能证明真实存款或资产。
+                </p>
+                <details className="usage-disclaimer">
+                  <summary>使用须知与免责声明</summary>
+                  <p>
+                    这是免费、无商业化计划的个人整活工具，不连接银行，与金融机构无关联。图片中的数据由你填写或模拟生成。
+                  </p>
+                  <p>
+                    不得冒充真实凭证，用于骗取钱款、授信、交易担保、资产审核或其他违法、侵权行为。请对自己填写、传播和使用图片的行为负责，作者不为这些行为背书，也不参与相关借贷或交易。
+                  </p>
+                  <p>
+                    工具按现状提供。在适用法律允许的范围内，作者及贡献者不对使用、误用或传播工具及图片造成的损失承担责任；依法不能免除或限制的责任除外。
+                  </p>
+                  <p>
+                    参数和图片在浏览器内处理；访问站点仍会产生常规网络请求。无需填写真实银行卡号或他人敏感信息。
+                  </p>
+                  <a
+                    href="https://github.com/JerryZhi/bu-jie-qian/blob/main/DISCLAIMER.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    阅读完整免责声明 ↗
+                  </a>
+                </details>
+              </div>
             </div>
           </aside>
         </div>
         <footer className="site-footer">
           <span>
-            存笺 <span>·</span> 让表达，多一点从容。
+            个人整活 <span>·</span> 免费使用，没有商业化计划。
           </span>
           <span>
-            LOCAL FIRST <span>·</span> MADE WITH CARE
+            <a
+              href="https://github.com/JerryZhi/bu-jie-qian"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              查看源码
+            </a>
+            <span>·</span>
+            <a
+              href="https://github.com/JerryZhi/bu-jie-qian/blob/main/DISCLAIMER.md"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              免责声明
+            </a>
           </span>
         </footer>
       </main>
