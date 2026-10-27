@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { toBlob } from "html-to-image";
 import PreviewEditor, { type PreviewEditorHandle } from "./PreviewEditor";
 import {
@@ -15,9 +21,7 @@ import {
   RotateCcw,
   Settings2,
   Shuffle,
-  ShieldCheck,
   Smartphone,
-  Sparkles,
   Zap,
 } from "lucide-react";
 import {
@@ -118,6 +122,22 @@ function Toggle({
   );
 }
 
+// Scale the preview to available screen space; exported images keep their original size.
+function fitPreviewScale() {
+  const mobile = window.innerWidth <= 820;
+  const availableWidth = mobile
+    ? window.innerWidth - 60
+    : (Math.min(window.innerWidth - 48, 1120) - 24) * 0.55 - 40;
+  return Math.max(
+    0.4,
+    Math.min(
+      mobile ? 0.78 : 0.9,
+      availableWidth / 410,
+      (window.innerHeight - (mobile ? 205 : 168)) / 864,
+    ),
+  );
+}
+
 export default function App() {
   const [initial] = useState(() => {
     try {
@@ -147,6 +167,12 @@ export default function App() {
   const [previewEditing, setPreviewEditing] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const [previewScale, setPreviewScale] = useState(fitPreviewScale);
+  useEffect(() => {
+    const resize = () => setPreviewScale(fitPreviewScale());
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
   const [showEditable, setShowEditable] = useState(false);
   const previewEditorRef = useRef<PreviewEditorHandle>(null);
   const screenRef = useRef<HTMLDivElement>(null);
@@ -261,528 +287,460 @@ export default function App() {
         </div>
       </header>
       <main className="workspace">
-        <div className="intro">
-          <div>
-            <div className="eyebrow">
-              <span /> 免费使用 · 个人整活 · 没有商业化计划
+        <div className="editor-grid">
+          <div className="editor-sidebar">
+            <div className="intro">
+              <h1>
+                钱存定期了，
+                <br />
+                <span>这次真借不了。</span>
+              </h1>
+              <p>改好画面，一键生成模拟截图。</p>
             </div>
-            <h1>
-              让你拒绝朋友借钱，<span>更有底气</span>
-            </h1>
-            <p>兄弟，不是哥不帮你，哥上周刚存了定期</p>
-          </div>
-          <div className="intro-note">
-            <ShieldCheck size={18} />
-            <span>
-              无需登录，无需上传
-              <br />
-              <small>所有生成操作均在本机完成</small>
-            </span>
-          </div>
-        </div>
-        <div
-          className={`workspace-actions ${showControls ? "" : "is-preview-first"}`}
-        >
-          <span>改好画面，就能导出</span>
-          <div>
-            <button
-              className="text-button"
-              disabled={exporting || previewEditing || (!valid && showControls)}
-              aria-expanded={showControls}
-              aria-controls="all-parameters"
-              title={!valid ? "请先修正标红参数" : undefined}
-              onClick={() => setShowControls(!showControls)}
-            >
-              <Settings2 size={15} />
-              {showControls ? "收起参数" : "全部参数"}
-            </button>
-            <button
-              className="text-button"
-              disabled={exporting || previewEditing}
-              onClick={() => setShowReset(true)}
-            >
-              <RotateCcw size={13} />
-              重置
-            </button>
-          </div>
-        </div>
-        <div
-          className={`editor-grid ${showControls ? "" : "is-preview-first"}`}
-        >
-          <div className="controls" id="all-parameters" hidden={!showControls}>
-            <div className="panel-title">
-              <div>
+            <div className="workspace-actions">
+              <button
+                className="advanced-button"
+                disabled={
+                  exporting || previewEditing || (!valid && showControls)
+                }
+                aria-expanded={showControls}
+                aria-controls="all-parameters"
+                title={!valid ? "请先修正标红参数" : undefined}
+                onClick={() => setShowControls(!showControls)}
+              >
                 <Settings2 size={17} />
-                <h2>参数编辑</h2>
-              </div>
+                {showControls ? "收起高级设置" : "高级设置"}
+                <ChevronDown
+                  size={15}
+                  className={showControls ? "is-open" : ""}
+                />
+              </button>
+              <button
+                className="text-button"
+                disabled={exporting || previewEditing}
+                onClick={() => previewEditorRef.current?.edit("amount")}
+              >
+                修改金额
+              </button>
+              <button
+                className="text-button"
+                disabled={exporting || previewEditing}
+                onClick={() => setShowReset(true)}
+              >
+                <RotateCcw size={13} />
+                重置
+              </button>
             </div>
-            <fieldset
-              disabled={exporting || previewEditing}
-              className="editor-fields"
+            <div
+              className="controls"
+              id="all-parameters"
+              hidden={!showControls}
             >
-              <Section
-                number="01"
-                title="存款设置"
-                subtitle="设置金额、利率与存款期限"
-                icon={<FileImage size={19} />}
-              >
-                <Field id="amount" label="存款金额" error={errors.amount}>
-                  <div className="input-shell amount-input">
-                    <span>¥</span>
-                    <input
-                      id="amount"
-                      type="text"
-                      inputMode="decimal"
-                      value={config.amount}
-                      onChange={(event) => update("amount", event.target.value)}
-                      {...inputProps("amount")}
-                    />
-                    <span>元</span>
-                  </div>
-                </Field>
-                <div className="field-row">
-                  <Field id="rate" label="年利率" error={errors.rate}>
-                    <div className="input-shell">
-                      <input
-                        id="rate"
-                        type="text"
-                        inputMode="decimal"
-                        value={config.rate}
-                        onChange={(event) => update("rate", event.target.value)}
-                        {...inputProps("rate")}
-                      />
-                      <span>%</span>
-                    </div>
-                  </Field>
-                  <Field id="months" label="存款期限">
-                    <div className="select-shell">
-                      <select
-                        id="months"
-                        value={config.months}
-                        disabled={config.customEnd}
-                        onChange={(event) =>
-                          update("months", Number(event.target.value))
-                        }
-                      >
-                        {TERMS.map((months) => (
-                          <option key={months} value={months}>
-                            {termLabel(months)}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown size={14} />
-                    </div>
-                  </Field>
-                </div>
-                <div className="field-row">
-                  <Field
-                    id="startDate"
-                    label="存入日期"
-                    error={errors.startDate}
-                  >
-                    <input
-                      id="startDate"
-                      type="date"
-                      min="1900-01-01"
-                      max="2199-12-31"
-                      value={config.startDate}
-                      onChange={(event) =>
-                        update("startDate", event.target.value)
-                      }
-                      {...inputProps("startDate")}
-                    />
-                  </Field>
-                  <Field id="endDate" label="到期日期" error={errors.endDate}>
-                    <input
-                      id="endDate"
-                      type="date"
-                      min={config.startDate || "1900-01-01"}
-                      max="2199-12-31"
-                      value={maturity(config)}
-                      readOnly={!config.customEnd}
-                      onChange={(event) =>
-                        update("endDate", event.target.value)
-                      }
-                      {...inputProps("endDate")}
-                    />
-                  </Field>
-                </div>
-                <div className="switch-line">
-                  <label htmlFor="customEnd">
-                    手动设置到期日期
-                    <span>
-                      {config.customEnd
-                        ? "按实际天数 / 365 估算收益"
-                        : "默认根据存期自动计算"}
-                    </span>
-                  </label>
-                  <Toggle
-                    id="customEnd"
-                    checked={config.customEnd}
-                    label="手动设置到期日期"
-                    onChange={(value) => {
-                      if (value) update("endDate", maturity(config));
-                      update("customEnd", value);
-                    }}
-                  />
-                </div>
-                <div className="field-row">
-                  <Field
-                    id="cardSuffix"
-                    label="卡号尾号"
-                    error={errors.cardSuffix}
-                  >
-                    <input
-                      id="cardSuffix"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      maxLength={4}
-                      pattern="[0-9]{4}"
-                      value={config.cardSuffix}
-                      onChange={(event) =>
-                        update("cardSuffix", event.target.value)
-                      }
-                      {...inputProps("cardSuffix")}
-                    />
-                  </Field>
-                  <Field
-                    id="accountSuffix"
-                    label="账户尾号"
-                    error={errors.accountSuffix}
-                  >
-                    <input
-                      id="accountSuffix"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      maxLength={4}
-                      pattern="[0-9]{4}"
-                      value={config.accountSuffix}
-                      onChange={(event) =>
-                        update("accountSuffix", event.target.value)
-                      }
-                      {...inputProps("accountSuffix")}
-                    />
-                  </Field>
-                </div>
-                <button
-                  type="button"
-                  className="text-button random-suffix-button"
-                  onClick={() => {
-                    update("cardSuffix", randomSuffix());
-                    update("accountSuffix", randomSuffix());
-                  }}
-                >
-                  <Shuffle size={13} /> 随机生成两个尾号
-                </button>
-                <div className="estimate-box">
-                  <div>
-                    <span>
-                      预计到期利息
-                      <Info size={12} />
-                    </span>
-                    <strong>
-                      {values ? `¥ ${money(values.interest)}` : "—"}
-                    </strong>
-                  </div>
-                  <p>
-                    {config.customEnd
-                      ? "本金 × 年利率 × 实际天数 ÷ 365"
-                      : "本金 × 年利率 × 存款月数 ÷ 12"}{" "}
-                    · 单利估算
-                  </p>
-                </div>
-              </Section>
-              <Section
-                number="02"
-                title="手机状态"
-                subtitle="细节，也可以刚刚好"
-                icon={<Smartphone size={19} />}
-              >
-                <div className="field-row">
-                  <Field id="time" label="手机时间" error={errors.time}>
-                    <input
-                      id="time"
-                      type="time"
-                      value={config.time}
-                      onChange={(event) => update("time", event.target.value)}
-                      {...inputProps("time")}
-                    />
-                  </Field>
-                  <Field id="network" label="网络类型">
-                    <div className="select-shell">
-                      <select
-                        id="network"
-                        value={config.network}
-                        onChange={(event) =>
-                          update(
-                            "network",
-                            event.target.value as Config["network"],
-                          )
-                        }
-                      >
-                        <option value="wifi">Wi-Fi</option>
-                        <option value="5G">5G</option>
-                        <option value="4G">4G</option>
-                      </select>
-                      <ChevronDown size={14} />
-                    </div>
-                  </Field>
-                </div>
-                <Field id="battery" label="电池电量" error={errors.battery}>
-                  <div className="battery-controls">
-                    <Battery size={19} />
-                    <input
-                      aria-label="电量滑块"
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={errors.battery ? 0 : Number(config.battery)}
-                      onChange={(event) =>
-                        update("battery", event.target.value)
-                      }
-                    />
-                    <div className="input-shell">
-                      <input
-                        id="battery"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={config.battery}
-                        onChange={(event) =>
-                          update("battery", event.target.value)
-                        }
-                        {...inputProps("battery")}
-                      />
-                      <span>%</span>
-                    </div>
-                  </div>
-                </Field>
-                <div className="field-row device-bottom">
-                  <div className="signal-setting">
-                    <label htmlFor="signal">信号强度</label>
-                    <select
-                      id="signal"
-                      value={config.signal}
-                      onChange={(event) =>
-                        update("signal", Number(event.target.value))
-                      }
-                    >
-                      {[4, 3, 2, 1, 0].map((n) => (
-                        <option key={n} value={n}>
-                          {n === 0 ? "无信号" : `${n} 格信号`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="charging-switch">
-                    <label htmlFor="charging">
-                      <Zap size={14} />
-                      充电状态
-                    </label>
-                    <Toggle
-                      id="charging"
-                      label="充电状态"
-                      checked={config.charging}
-                      onChange={(value) => update("charging", value)}
-                    />
-                  </div>
-                </div>
-              </Section>
-              <Section
-                number="03"
-                title="导出设置"
-                subtitle="为每一个像素保留清晰度"
-                icon={<ArrowDownToLine size={19} />}
-              >
-                <div
-                  className="resolution-options"
-                  role="group"
-                  aria-label="导出清晰度"
-                >
-                  {([1, 2, 3] as const).map((scale) => (
-                    <button
-                      key={scale}
-                      className={config.scale === scale ? "selected" : ""}
-                      aria-pressed={config.scale === scale}
-                      onClick={() => update("scale", scale)}
-                    >
-                      <strong>
-                        {scale}×{" "}
-                        <span>
-                          {scale === 1 ? "标准" : scale === 2 ? "高清" : "超清"}
-                        </span>
-                      </strong>
-                      <small>
-                        {WIDTH * scale} × {HEIGHT * scale}
-                      </small>
-                      {config.scale === scale && (
-                        <span className="resolution-check">
-                          <Check size={9} />
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <p className="export-note">
-                  <Info size={13} />
-                  导出仅包含手机画面，不包含网站提示。
-                </p>
-                <div className="switch-line">
-                  <label htmlFor="cropFooter">
-                    底部文字半截显示<span>模拟页面超出屏幕边界</span>
-                  </label>
-                  <Toggle
-                    id="cropFooter"
-                    label="底部文字半截显示"
-                    checked={config.cropFooter}
-                    onChange={(value) => update("cropFooter", value)}
-                  />
-                </div>
-              </Section>
-            </fieldset>
-          </div>
-          <aside className="preview-column">
-            <div className="preview-panel">
-              <div className="preview-toolbar">
-                <span>
-                  <i />
-                  实时预览
-                </span>
-                <span>
-                  390 × 844 <span className="toolbar-divider">/</span>{" "}
-                  参考图布局
-                </span>
-              </div>
-              <div className="preview-guide">
-                <strong>
-                  <span className="desktop-instruction">
-                    双击画面中的内容修改
-                  </span>
-                  <span className="touch-instruction">
-                    点按画面中的内容修改
-                  </span>
-                </strong>
-                <p>
-                  金额、日期、尾号和状态图标都能改；利息自动计算。也可打开“全部参数”集中填写。
-                </p>
-                <div className="guide-actions">
-                  <button
-                    className="guide-start"
-                    disabled={exporting || previewEditing}
-                    onClick={() => previewEditorRef.current?.edit("amount")}
-                  >
-                    试试修改金额
-                  </button>
-                  <button
-                    className="text-button"
-                    aria-pressed={showEditable}
-                    disabled={exporting}
-                    onClick={() => setShowEditable(!showEditable)}
-                  >
-                    {showEditable ? "隐藏编辑标记" : "标出可编辑位置"}
-                  </button>
+              <div className="panel-title">
+                <div>
+                  <Settings2 size={17} />
+                  <h2>高级设置</h2>
                 </div>
               </div>
               <fieldset
-                className="quick-settings"
                 disabled={exporting || previewEditing}
+                className="editor-fields"
               >
-                <div>
-                  <label htmlFor="hotspot">热点提示</label>
-                  <small>
-                    {config.showHotspot
-                      ? "正在连接 1 台设备"
-                      : "已关闭 · 顶部中间留白"}
-                  </small>
-                </div>
-                <Toggle
-                  id="hotspot"
-                  label="热点提示"
-                  checked={config.showHotspot}
-                  onChange={(value) => update("showHotspot", value)}
-                />
-              </fieldset>
-              <div className="preview-stage">
-                <div className="preview-caption">
-                  <span className="caption-line" />
-                  <span>钱都存定期了，这次真借不了</span>
-                  <span className="caption-line" />
-                </div>
-                <div className="phone-container">
-                  <div
-                    className={`phone-frame ${showEditable ? "show-editable" : ""}`}
-                  >
-                    <PreviewEditor
-                      ref={previewEditorRef}
-                      config={config}
-                      screenRef={screenRef}
-                      disabled={exporting}
-                      onEditingChange={setPreviewEditing}
-                      onChange={(patch) => {
-                        hasEdited.current = true;
-                        setConfig((current) => ({ ...current, ...patch }));
+                <Section
+                  number="01"
+                  title="存款设置"
+                  subtitle="设置金额、利率与存款期限"
+                  icon={<FileImage size={19} />}
+                >
+                  <Field id="amount" label="存款金额" error={errors.amount}>
+                    <div className="input-shell amount-input">
+                      <span>¥</span>
+                      <input
+                        id="amount"
+                        type="text"
+                        inputMode="decimal"
+                        value={config.amount}
+                        onChange={(event) =>
+                          update("amount", event.target.value)
+                        }
+                        {...inputProps("amount")}
+                      />
+                      <span>元</span>
+                    </div>
+                  </Field>
+                  <div className="field-row">
+                    <Field id="rate" label="年利率" error={errors.rate}>
+                      <div className="input-shell">
+                        <input
+                          id="rate"
+                          type="text"
+                          inputMode="decimal"
+                          value={config.rate}
+                          onChange={(event) =>
+                            update("rate", event.target.value)
+                          }
+                          {...inputProps("rate")}
+                        />
+                        <span>%</span>
+                      </div>
+                    </Field>
+                    <Field id="months" label="存款期限">
+                      <div className="select-shell">
+                        <select
+                          id="months"
+                          value={config.months}
+                          disabled={config.customEnd}
+                          onChange={(event) =>
+                            update("months", Number(event.target.value))
+                          }
+                        >
+                          {TERMS.map((months) => (
+                            <option key={months} value={months}>
+                              {termLabel(months)}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown size={14} />
+                      </div>
+                    </Field>
+                  </div>
+                  <div className="field-row">
+                    <Field
+                      id="startDate"
+                      label="存入日期"
+                      error={errors.startDate}
+                    >
+                      <input
+                        id="startDate"
+                        type="date"
+                        min="1900-01-01"
+                        max="2199-12-31"
+                        value={config.startDate}
+                        onChange={(event) =>
+                          update("startDate", event.target.value)
+                        }
+                        {...inputProps("startDate")}
+                      />
+                    </Field>
+                    <Field id="endDate" label="到期日期" error={errors.endDate}>
+                      <input
+                        id="endDate"
+                        type="date"
+                        min={config.startDate || "1900-01-01"}
+                        max="2199-12-31"
+                        value={maturity(config)}
+                        readOnly={!config.customEnd}
+                        onChange={(event) =>
+                          update("endDate", event.target.value)
+                        }
+                        {...inputProps("endDate")}
+                      />
+                    </Field>
+                  </div>
+                  <div className="switch-line">
+                    <label htmlFor="customEnd">
+                      手动设置到期日期
+                      <span>
+                        {config.customEnd
+                          ? "按实际天数 / 365 估算收益"
+                          : "默认根据存期自动计算"}
+                      </span>
+                    </label>
+                    <Toggle
+                      id="customEnd"
+                      checked={config.customEnd}
+                      label="手动设置到期日期"
+                      onChange={(value) => {
+                        if (value) update("endDate", maturity(config));
+                        update("customEnd", value);
                       }}
                     />
                   </div>
-                </div>
-                <div className="preview-stage-footer">
-                  <Sparkles size={13} />
-                  <span className="preview-edit-hint">
-                    双击画面中的数值或图标，即可修改
-                  </span>
-                  <span className="preview-form-hint">
-                    点按画面中的数值或图标，即可修改
-                  </span>
-                </div>
-              </div>
-              <div className="export-footer">
-                <div>
-                  <FileImage size={21} />
-                  <div>
-                    <label className="export-scale-label" htmlFor="exportScale">
-                      PNG 清晰度
-                    </label>
-                    <select
-                      id="exportScale"
-                      value={config.scale}
-                      disabled={exporting || previewEditing}
-                      onChange={(event) =>
-                        update(
-                          "scale",
-                          Number(event.target.value) as Config["scale"],
-                        )
-                      }
+                  <div className="field-row">
+                    <Field
+                      id="cardSuffix"
+                      label="卡号尾号"
+                      error={errors.cardSuffix}
                     >
-                      <option value={1}>1× 标准</option>
-                      <option value={2}>2× 高清</option>
-                      <option value={3}>3× 超清</option>
-                    </select>
-                    <small>
-                      {WIDTH * config.scale} × {HEIGHT * config.scale} px ·{" "}
-                      {config.scale} 倍清晰度
-                    </small>
+                      <input
+                        id="cardSuffix"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        maxLength={4}
+                        pattern="[0-9]{4}"
+                        value={config.cardSuffix}
+                        onChange={(event) =>
+                          update("cardSuffix", event.target.value)
+                        }
+                        {...inputProps("cardSuffix")}
+                      />
+                    </Field>
+                    <Field
+                      id="accountSuffix"
+                      label="账户尾号"
+                      error={errors.accountSuffix}
+                    >
+                      <input
+                        id="accountSuffix"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        maxLength={4}
+                        pattern="[0-9]{4}"
+                        value={config.accountSuffix}
+                        onChange={(event) =>
+                          update("accountSuffix", event.target.value)
+                        }
+                        {...inputProps("accountSuffix")}
+                      />
+                    </Field>
                   </div>
-                </div>
-                <button
-                  className="export-button"
-                  onClick={exportPng}
-                  disabled={!valid || exporting || previewEditing}
-                  title={
-                    previewEditing ? "请先保存或取消预览中的修改" : undefined
-                  }
+                  <button
+                    type="button"
+                    className="text-button random-suffix-button"
+                    onClick={() => {
+                      update("cardSuffix", randomSuffix());
+                      update("accountSuffix", randomSuffix());
+                    }}
+                  >
+                    <Shuffle size={13} /> 随机生成两个尾号
+                  </button>
+                  <div className="estimate-box">
+                    <div>
+                      <span>
+                        预计到期利息
+                        <Info size={12} />
+                      </span>
+                      <strong>
+                        {values ? `¥ ${money(values.interest)}` : "—"}
+                      </strong>
+                    </div>
+                    <p>
+                      {config.customEnd
+                        ? "本金 × 年利率 × 实际天数 ÷ 365"
+                        : "本金 × 年利率 × 存款月数 ÷ 12"}{" "}
+                      · 单利估算
+                    </p>
+                  </div>
+                </Section>
+                <Section
+                  number="02"
+                  title="手机状态"
+                  subtitle="细节，也可以刚刚好"
+                  icon={<Smartphone size={19} />}
                 >
-                  {exporting ? (
-                    <LoaderCircle size={16} className="spin" />
-                  ) : (
-                    <ArrowDownToLine size={16} />
-                  )}
-                  {exporting ? "正在生成" : "导出 PNG"}
-                  {!exporting && <ArrowUpRight size={14} />}
-                </button>
+                  <div className="field-row">
+                    <Field id="time" label="手机时间" error={errors.time}>
+                      <input
+                        id="time"
+                        type="time"
+                        value={config.time}
+                        onChange={(event) => update("time", event.target.value)}
+                        {...inputProps("time")}
+                      />
+                    </Field>
+                    <Field id="network" label="网络类型">
+                      <div className="select-shell">
+                        <select
+                          id="network"
+                          value={config.network}
+                          onChange={(event) =>
+                            update(
+                              "network",
+                              event.target.value as Config["network"],
+                            )
+                          }
+                        >
+                          <option value="wifi">Wi-Fi</option>
+                          <option value="5G">5G</option>
+                          <option value="4G">4G</option>
+                        </select>
+                        <ChevronDown size={14} />
+                      </div>
+                    </Field>
+                  </div>
+                  <Field id="battery" label="电池电量" error={errors.battery}>
+                    <div className="battery-controls">
+                      <Battery size={19} />
+                      <input
+                        aria-label="电量滑块"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={errors.battery ? 0 : Number(config.battery)}
+                        onChange={(event) =>
+                          update("battery", event.target.value)
+                        }
+                      />
+                      <div className="input-shell">
+                        <input
+                          id="battery"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={config.battery}
+                          onChange={(event) =>
+                            update("battery", event.target.value)
+                          }
+                          {...inputProps("battery")}
+                        />
+                        <span>%</span>
+                      </div>
+                    </div>
+                  </Field>
+                  <div className="field-row device-bottom">
+                    <div className="signal-setting">
+                      <label htmlFor="signal">信号强度</label>
+                      <select
+                        id="signal"
+                        value={config.signal}
+                        onChange={(event) =>
+                          update("signal", Number(event.target.value))
+                        }
+                      >
+                        {[4, 3, 2, 1, 0].map((n) => (
+                          <option key={n} value={n}>
+                            {n === 0 ? "无信号" : `${n} 格信号`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="charging-switch">
+                      <label htmlFor="charging">
+                        <Zap size={14} />
+                        充电状态
+                      </label>
+                      <Toggle
+                        id="charging"
+                        label="充电状态"
+                        checked={config.charging}
+                        onChange={(value) => update("charging", value)}
+                      />
+                    </div>
+                  </div>
+                </Section>
+                <Section
+                  number="03"
+                  title="导出设置"
+                  subtitle="为每一个像素保留清晰度"
+                  icon={<ArrowDownToLine size={19} />}
+                >
+                  <div
+                    className="resolution-options"
+                    role="group"
+                    aria-label="导出清晰度"
+                  >
+                    {([1, 2, 3] as const).map((scale) => (
+                      <button
+                        key={scale}
+                        className={config.scale === scale ? "selected" : ""}
+                        aria-pressed={config.scale === scale}
+                        onClick={() => update("scale", scale)}
+                      >
+                        <strong>
+                          {scale}×{" "}
+                          <span>
+                            {scale === 1
+                              ? "标准"
+                              : scale === 2
+                                ? "高清"
+                                : "超清"}
+                          </span>
+                        </strong>
+                        <small>
+                          {WIDTH * scale} × {HEIGHT * scale}
+                        </small>
+                        {config.scale === scale && (
+                          <span className="resolution-check">
+                            <Check size={9} />
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="export-note">
+                    <Info size={13} />
+                    导出仅包含手机画面，不包含网站提示。
+                  </p>
+                  <div className="switch-line">
+                    <label htmlFor="cropFooter">
+                      底部文字半截显示<span>模拟页面超出屏幕边界</span>
+                    </label>
+                    <Toggle
+                      id="cropFooter"
+                      label="底部文字半截显示"
+                      checked={config.cropFooter}
+                      onChange={(value) => update("cropFooter", value)}
+                    />
+                  </div>
+                </Section>
+              </fieldset>
+            </div>
+            <fieldset
+              className="quick-settings"
+              disabled={exporting || previewEditing}
+            >
+              <div>
+                <label htmlFor="hotspot">热点提示</label>
+                <small>
+                  {config.showHotspot
+                    ? "正在连接 1 台设备"
+                    : "已关闭 · 顶部中间留白"}
+                </small>
               </div>
+              <Toggle
+                id="hotspot"
+                label="热点提示"
+                checked={config.showHotspot}
+                onChange={(value) => update("showHotspot", value)}
+              />
+            </fieldset>
+            <div className="export-footer">
+              <div>
+                <FileImage size={21} />
+                <div>
+                  <label className="export-scale-label" htmlFor="exportScale">
+                    PNG 清晰度
+                  </label>
+                  <select
+                    id="exportScale"
+                    value={config.scale}
+                    disabled={exporting || previewEditing}
+                    onChange={(event) =>
+                      update(
+                        "scale",
+                        Number(event.target.value) as Config["scale"],
+                      )
+                    }
+                  >
+                    <option value={1}>1× 标准</option>
+                    <option value={2}>2× 高清</option>
+                    <option value={3}>3× 超清</option>
+                  </select>
+                  <small>
+                    {WIDTH * config.scale} × {HEIGHT * config.scale} px ·{" "}
+                    {config.scale} 倍清晰度
+                  </small>
+                </div>
+              </div>
+              <button
+                className="export-button"
+                onClick={exportPng}
+                disabled={!valid || exporting || previewEditing}
+                title={
+                  previewEditing ? "请先保存或取消预览中的修改" : undefined
+                }
+              >
+                {exporting ? (
+                  <LoaderCircle size={16} className="spin" />
+                ) : (
+                  <ArrowDownToLine size={16} />
+                )}
+                {exporting ? "正在生成" : "导出 PNG"}
+                {!exporting && <ArrowUpRight size={14} />}
+              </button>
             </div>
             <div className="storage-status" role="status">
               <span
@@ -828,6 +786,47 @@ export default function App() {
                     阅读完整免责声明 ↗
                   </a>
                 </details>
+              </div>
+            </div>
+          </div>
+          <aside className="preview-column" aria-label="手机预览">
+            <div className="preview-panel">
+              <div className="preview-toolbar">
+                <span>
+                  <i />
+                  <span className="desktop-instruction">双击内容修改</span>
+                  <span className="touch-instruction">点按内容修改</span>
+                </span>
+                <button
+                  className="text-button"
+                  aria-pressed={showEditable}
+                  disabled={exporting}
+                  onClick={() => setShowEditable(!showEditable)}
+                >
+                  {showEditable ? "隐藏编辑标记" : "标出可编辑项"}
+                </button>
+              </div>
+              <div
+                className="preview-stage"
+                style={{ "--phone-scale": previewScale } as CSSProperties}
+              >
+                <div className="phone-container">
+                  <div
+                    className={`phone-frame ${showEditable ? "show-editable" : ""}`}
+                  >
+                    <PreviewEditor
+                      ref={previewEditorRef}
+                      config={config}
+                      screenRef={screenRef}
+                      disabled={exporting}
+                      onEditingChange={setPreviewEditing}
+                      onChange={(patch) => {
+                        hasEdited.current = true;
+                        setConfig((current) => ({ ...current, ...patch }));
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </aside>
