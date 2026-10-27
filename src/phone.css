@@ -345,6 +345,11 @@
   user-select: none;
   border-radius: 5px;
 }
+.timeline-slider::before {
+  content: "";
+  position: absolute;
+  inset: 0 -8px;
+}
 .timeline-thumb {
   position: absolute;
   top: 50%;
