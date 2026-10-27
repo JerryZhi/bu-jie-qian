@@ -1,10 +1,12 @@
 import {
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useRef,
   useState,
   type HTMLAttributes,
   type RefObject,
+  type Ref,
 } from "react";
 import { createPortal } from "react-dom";
 import PhoneScreen from "./PhoneScreen";
@@ -23,20 +25,24 @@ const labels = {
   connection: "网络与信号",
   battery: "电量与充电状态",
   cropFooter: "底部文字显示",
+  showHotspot: "热点提示",
 };
 export type PreviewField = keyof typeof labels;
+export type PreviewEditorHandle = { edit: (field: PreviewField) => void };
 export type PreviewEditProps = HTMLAttributes<HTMLElement> & {
   "data-edit-field"?: PreviewField;
 };
 const desktopQuery = "(hover: hover) and (pointer: fine)";
 
 export default function PreviewEditor({
+  ref,
   config,
   screenRef,
   disabled,
   onChange,
   onEditingChange,
 }: {
+  ref?: Ref<PreviewEditorHandle>;
   config: Config;
   screenRef: RefObject<HTMLDivElement | null>;
   disabled: boolean;
@@ -85,28 +91,38 @@ export default function PreviewEditor({
     function reposition() {
       if (!active || !editorRef.current) return;
       const anchor = active.target.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const viewTop = viewport?.offsetTop ?? 0;
+      const viewLeft = viewport?.offsetLeft ?? 0;
+      const viewBottom = viewTop + (viewport?.height ?? window.innerHeight);
+      const viewRight = viewLeft + (viewport?.width ?? window.innerWidth);
+      editorRef.current.style.maxHeight = `${viewBottom - viewTop - 24}px`;
       const box = editorRef.current.getBoundingClientRect();
       const top =
-        anchor.bottom + 8 + box.height <= window.innerHeight - 12
+        anchor.bottom + 8 + box.height <= viewBottom - 12
           ? anchor.bottom + 8
           : anchor.top - box.height - 8;
       setPosition({
         left: Math.max(
-          12,
-          Math.min(
-            anchor.right - box.width,
-            window.innerWidth - box.width - 12,
-          ),
+          viewLeft + 12,
+          Math.min(anchor.right - box.width, viewRight - box.width - 12),
         ),
-        top: Math.max(12, Math.min(top, window.innerHeight - box.height - 12)),
+        top: Math.max(
+          viewTop + 12,
+          Math.min(top, viewBottom - box.height - 12),
+        ),
       });
     }
     reposition();
     window.addEventListener("resize", reposition);
     window.addEventListener("scroll", reposition, true);
+    window.visualViewport?.addEventListener("resize", reposition);
+    window.visualViewport?.addEventListener("scroll", reposition);
     return () => {
       window.removeEventListener("resize", reposition);
       window.removeEventListener("scroll", reposition, true);
+      window.visualViewport?.removeEventListener("resize", reposition);
+      window.visualViewport?.removeEventListener("scroll", reposition);
     };
   }, [active, error]);
 
@@ -157,37 +173,54 @@ export default function PreviewEditor({
     return () => document.removeEventListener("pointerdown", outside);
   });
 
+  function open(field: PreviewField, target: HTMLElement) {
+    if (disabled) return;
+    if (active && !save()) return;
+    target.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const initialPatch: Partial<Config> =
+      field === "endDate"
+        ? { endDate: maturity(config), customEnd: true }
+        : field === "months"
+          ? { months: config.months, customEnd: false }
+          : field === "connection"
+            ? { network: config.network, signal: config.signal }
+            : field === "battery"
+              ? { battery: config.battery, charging: config.charging }
+              : { [field]: config[field] };
+    setPatch(initialPatch);
+    setError("");
+    setActive({ field, target });
+    window.getSelection()?.removeAllRanges();
+  }
+
+  useImperativeHandle(ref, () => ({
+    edit(field) {
+      const target = screenRef.current?.querySelector<HTMLElement>(
+        `[data-edit-field="${field}"]`,
+      );
+      if (target) open(field, target);
+    },
+  }));
+
   function editProps(field: PreviewField): PreviewEditProps {
-    if (!desktop || disabled) return {};
-    function open(target: HTMLElement) {
-      if (active && !save()) return;
-      const initialPatch: Partial<Config> =
-        field === "endDate"
-          ? { endDate: maturity(config), customEnd: true }
-          : field === "months"
-            ? { months: config.months, customEnd: false }
-            : field === "connection"
-              ? { network: config.network, signal: config.signal }
-              : field === "battery"
-                ? { battery: config.battery, charging: config.charging }
-                : { [field]: config[field] };
-      setPatch(initialPatch);
-      setError("");
-      setActive({ field, target });
-      window.getSelection()?.removeAllRanges();
-    }
+    if (disabled) return {};
     return {
       "data-edit-field": field,
-      title: `双击修改${labels[field]}`,
+      title: `${desktop ? "双击" : "点按"}修改${labels[field]}`,
       tabIndex: 0,
       role: "button",
       "aria-label": `修改${labels[field]}`,
       "aria-haspopup": "dialog",
-      onDoubleClick: (event) => open(event.currentTarget),
+      onDoubleClick: desktop
+        ? (event) => open(field, event.currentTarget)
+        : undefined,
+      onClick: desktop
+        ? undefined
+        : (event) => open(field, event.currentTarget),
       onKeyDown: (event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          open(event.currentTarget);
+          open(field, event.currentTarget);
         }
       },
     };
@@ -268,7 +301,7 @@ export default function PreviewEditor({
           >
             <div className="preview-editor-heading">
               <strong>{labels[active.field]}</strong>
-              <span>双击编辑</span>
+              <span>{desktop ? "双击编辑" : "点按编辑"}</span>
             </div>
             {active.field === "connection" ? (
               <>
@@ -333,19 +366,25 @@ export default function PreviewEditor({
                   </select>
                 </label>
                 <p className="preview-editor-note">
-                  保存后按存期自动计算到期日。自定义日期可双击到期日修改。
+                  保存后按存期自动计算到期日。也可直接编辑画面中的到期日。
                 </p>
               </>
-            ) : active.field === "cropFooter" ? (
+            ) : active.field === "cropFooter" ||
+              active.field === "showHotspot" ? (
               <label className="preview-editor-check">
                 <input
                   type="checkbox"
-                  checked={draft.cropFooter}
+                  checked={draft[active.field]}
                   onChange={(event) =>
-                    change("cropFooter", event.target.checked)
+                    change(
+                      active.field as "cropFooter" | "showHotspot",
+                      event.target.checked,
+                    )
                   }
                 />
-                底部文字半截显示
+                {active.field === "cropFooter"
+                  ? "底部文字半截显示"
+                  : "显示热点连接 1 台设备"}
               </label>
             ) : (
               <>

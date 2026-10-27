@@ -89,10 +89,12 @@ export default function PhoneScreen({
         <strong {...editProps("time")}>
           {errors.time ? "--:--" : config.time}
         </strong>
-        <span className="status-island" aria-hidden="true">
-          <Link2 size={22} />
-          <span>1台</span>
-        </span>
+        {config.showHotspot && (
+          <span className="status-island" {...editProps("showHotspot")}>
+            <Link2 size={22} />
+            <span>1台</span>
+          </span>
+        )}
         <div className="status-indicators">
           <span className="connection-status" {...editProps("connection")}>
             <Signal count={config.signal} network={config.network} />

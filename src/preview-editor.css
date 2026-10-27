@@ -100,3 +100,35 @@
   opacity: 0.65;
   margin-left: 5px;
 }
+.show-editable [data-edit-field],
+[data-edit-field]:focus-visible {
+  outline: 1px dashed var(--accent);
+  outline-offset: 3px;
+}
+.show-editable [data-edit-field] {
+  background-color: #943e4310;
+}
+.desktop-instruction {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .desktop-instruction {
+    display: inline;
+  }
+  .touch-instruction {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  .preview-editor-field input,
+  .preview-editor-field select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .preview-editor-actions button {
+    min-height: 44px;
+  }
+  .preview-editor kbd {
+    display: none;
+  }
+}

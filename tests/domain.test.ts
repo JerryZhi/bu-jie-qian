@@ -149,3 +149,28 @@ test("saved configuration is versioned and validated before restoration", () => 
     null,
   );
 });
+
+test("hotspot defaults off while legacy settings retain their previous appearance", () => {
+  const config = defaults();
+  assert.equal(config.showHotspot, false);
+  const { showHotspot: _showHotspot, ...legacy } = config;
+  const restored = decodeConfig(JSON.stringify({ version: 1, config: legacy }));
+  assert.deepEqual(restored, { ...config, showHotspot: true });
+  for (const showHotspot of [true, false]) {
+    assert.equal(
+      decodeConfig(
+        JSON.stringify({ version: 1, config: { ...config, showHotspot } }),
+      )?.showHotspot,
+      showHotspot,
+    );
+  }
+  assert.equal(
+    decodeConfig(
+      JSON.stringify({
+        version: 1,
+        config: { ...config, showHotspot: "false" },
+      }),
+    ),
+    null,
+  );
+});

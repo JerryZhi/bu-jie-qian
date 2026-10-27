@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toBlob } from "html-to-image";
-import PreviewEditor from "./PreviewEditor";
+import PreviewEditor, { type PreviewEditorHandle } from "./PreviewEditor";
 import {
   ArrowDownToLine,
   ArrowUpRight,
@@ -146,6 +146,9 @@ export default function App() {
   const [exporting, setExporting] = useState(false);
   const [previewEditing, setPreviewEditing] = useState(false);
   const [showReset, setShowReset] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const [showEditable, setShowEditable] = useState(false);
+  const previewEditorRef = useRef<PreviewEditorHandle>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   const resetRef = useRef<HTMLDialogElement>(null);
   const hasEdited = useRef(false);
@@ -277,23 +280,46 @@ export default function App() {
             </span>
           </div>
         </div>
-        <div className="editor-grid">
-          <div className="controls">
+        <div
+          className={`workspace-actions ${showControls ? "" : "is-preview-first"}`}
+        >
+          <span>改好画面，就能导出</span>
+          <div>
+            <button
+              className="text-button"
+              disabled={exporting || previewEditing || (!valid && showControls)}
+              aria-expanded={showControls}
+              aria-controls="all-parameters"
+              title={!valid ? "请先修正标红参数" : undefined}
+              onClick={() => setShowControls(!showControls)}
+            >
+              <Settings2 size={15} />
+              {showControls ? "收起参数" : "全部参数"}
+            </button>
+            <button
+              className="text-button"
+              disabled={exporting || previewEditing}
+              onClick={() => setShowReset(true)}
+            >
+              <RotateCcw size={13} />
+              重置
+            </button>
+          </div>
+        </div>
+        <div
+          className={`editor-grid ${showControls ? "" : "is-preview-first"}`}
+        >
+          <div className="controls" id="all-parameters" hidden={!showControls}>
             <div className="panel-title">
               <div>
                 <Settings2 size={17} />
                 <h2>参数编辑</h2>
               </div>
-              <button
-                className="text-button"
-                onClick={() => setShowReset(true)}
-                disabled={exporting || previewEditing}
-              >
-                <RotateCcw size={13} />
-                重置
-              </button>
             </div>
-            <fieldset disabled={exporting} className="editor-fields">
+            <fieldset
+              disabled={exporting || previewEditing}
+              className="editor-fields"
+            >
               <Section
                 number="01"
                 title="存款设置"
@@ -617,15 +643,6 @@ export default function App() {
                 </div>
               </Section>
             </fieldset>
-            <div className="storage-status" role="status">
-              <span
-                className={
-                  valid && !initial.blocked ? "saved-dot" : "unsaved-dot"
-                }
-              />
-              {storageMessage}
-              <LockKeyhole size={12} />
-            </div>
           </div>
           <aside className="preview-column">
             <div className="preview-panel">
@@ -639,6 +656,55 @@ export default function App() {
                   参考图布局
                 </span>
               </div>
+              <div className="preview-guide">
+                <strong>
+                  <span className="desktop-instruction">
+                    双击画面中的内容修改
+                  </span>
+                  <span className="touch-instruction">
+                    点按画面中的内容修改
+                  </span>
+                </strong>
+                <p>
+                  金额、日期、尾号和状态图标都能改；利息自动计算。也可打开“全部参数”集中填写。
+                </p>
+                <div className="guide-actions">
+                  <button
+                    className="guide-start"
+                    disabled={exporting || previewEditing}
+                    onClick={() => previewEditorRef.current?.edit("amount")}
+                  >
+                    试试修改金额
+                  </button>
+                  <button
+                    className="text-button"
+                    aria-pressed={showEditable}
+                    disabled={exporting}
+                    onClick={() => setShowEditable(!showEditable)}
+                  >
+                    {showEditable ? "隐藏编辑标记" : "标出可编辑位置"}
+                  </button>
+                </div>
+              </div>
+              <fieldset
+                className="quick-settings"
+                disabled={exporting || previewEditing}
+              >
+                <div>
+                  <label htmlFor="hotspot">热点提示</label>
+                  <small>
+                    {config.showHotspot
+                      ? "正在连接 1 台设备"
+                      : "已关闭 · 顶部中间留白"}
+                  </small>
+                </div>
+                <Toggle
+                  id="hotspot"
+                  label="热点提示"
+                  checked={config.showHotspot}
+                  onChange={(value) => update("showHotspot", value)}
+                />
+              </fieldset>
               <div className="preview-stage">
                 <div className="preview-caption">
                   <span className="caption-line" />
@@ -646,8 +712,11 @@ export default function App() {
                   <span className="caption-line" />
                 </div>
                 <div className="phone-container">
-                  <div className="phone-frame">
+                  <div
+                    className={`phone-frame ${showEditable ? "show-editable" : ""}`}
+                  >
                     <PreviewEditor
+                      ref={previewEditorRef}
                       config={config}
                       screenRef={screenRef}
                       disabled={exporting}
@@ -665,7 +734,7 @@ export default function App() {
                     双击画面中的数值或图标，即可修改
                   </span>
                   <span className="preview-form-hint">
-                    调整参数，画面即时更新
+                    点按画面中的数值或图标，即可修改
                   </span>
                 </div>
               </div>
@@ -673,9 +742,24 @@ export default function App() {
                 <div>
                   <FileImage size={21} />
                   <div>
-                    <strong>
-                      PNG 图片<span>无损格式</span>
-                    </strong>
+                    <label className="export-scale-label" htmlFor="exportScale">
+                      PNG 清晰度
+                    </label>
+                    <select
+                      id="exportScale"
+                      value={config.scale}
+                      disabled={exporting || previewEditing}
+                      onChange={(event) =>
+                        update(
+                          "scale",
+                          Number(event.target.value) as Config["scale"],
+                        )
+                      }
+                    >
+                      <option value={1}>1× 标准</option>
+                      <option value={2}>2× 高清</option>
+                      <option value={3}>3× 超清</option>
+                    </select>
                     <small>
                       {WIDTH * config.scale} × {HEIGHT * config.scale} px ·{" "}
                       {config.scale} 倍清晰度
@@ -700,9 +784,18 @@ export default function App() {
                 </button>
               </div>
             </div>
+            <div className="storage-status" role="status">
+              <span
+                className={
+                  valid && !initial.blocked ? "saved-dot" : "unsaved-dot"
+                }
+              />
+              {storageMessage}
+              <LockKeyhole size={12} />
+            </div>
             {!valid && (
               <p className="export-error" role="alert">
-                请先修正左侧标红参数，再导出图片。
+                请先修正参数表单中标红的内容，再导出图片。
               </p>
             )}
             <div className="preview-disclaimer">

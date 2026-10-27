@@ -13,6 +13,7 @@ export interface Config {
   time: string;
   battery: string;
   charging: boolean;
+  showHotspot: boolean;
   network: "wifi" | "5G" | "4G";
   signal: number;
   scale: 1 | 2 | 3;
@@ -72,6 +73,7 @@ export function defaults(now = new Date()): Config {
     time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
     battery: "86",
     charging: false,
+    showHotspot: false,
     network: "wifi",
     signal: 4,
     scale: 3,
@@ -188,6 +190,10 @@ export function decodeConfig(raw: string): Config | null {
     if (!candidate || typeof candidate !== "object") return null;
     const result = defaults();
     for (const key of Object.keys(result) as (keyof Config)[]) {
+      if (key === "showHotspot" && !(key in candidate)) {
+        result.showHotspot = true;
+        continue;
+      }
       // Preserve existing v1 settings when loading configurations saved before this option existed.
       if (
         ["cropFooter", "cardSuffix", "accountSuffix"].includes(key) &&
