@@ -272,7 +272,6 @@
 .timeline-track > span {
   display: block;
   height: 6px;
-  min-width: 10px;
   max-width: 100%;
   border-radius: inherit;
   background: #d60000;
@@ -333,4 +332,40 @@
   height: 3px;
   border-radius: 4px;
   background: #666;
+}
+
+.timeline-control {
+  position: relative;
+}
+.timeline-slider {
+  position: absolute;
+  inset: -15px 0;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+  border-radius: 5px;
+}
+.timeline-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #d60000;
+  box-shadow: 0 0 0 1px #d60000;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+}
+.timeline-slider:hover .timeline-thumb,
+.timeline-slider:focus-visible .timeline-thumb,
+.timeline-slider.is-dragging .timeline-thumb,
+.show-editable .timeline-thumb {
+  opacity: 1;
+}
+.timeline-slider:focus-visible,
+.show-editable .timeline-slider {
+  outline: 1px dashed var(--accent);
+  outline-offset: 2px;
 }

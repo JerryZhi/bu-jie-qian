@@ -89,6 +89,77 @@ export function maturity(config: Config): string {
     : addMonths(config.startDate, config.months);
 }
 
+const DAY_MS = 86400000;
+const MIN_DAY = Date.UTC(1900, 0, 1) / DAY_MS;
+const MAX_DAY = Date.UTC(2199, 11, 31) / DAY_MS;
+const dayNumber = (date: string) => {
+  const parsed = parseDate(date);
+  return parsed ? parsed.getTime() / DAY_MS : null;
+};
+const dateAtDay = (day: number) =>
+  new Date(day * DAY_MS).toISOString().slice(0, 10);
+const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));
+
+export function depositProgress(
+  config: Config,
+  today = localDate(),
+): number | null {
+  const start = dayNumber(config.startDate);
+  const end = dayNumber(maturity(config));
+  const now = dayNumber(today);
+  if (start === null || end === null || now === null || end <= start)
+    return null;
+  return clamp((now - start) / (end - start), 0, 1) * 100;
+}
+
+// Move the whole date range around today, preserving calendar months or custom days.
+export function datesAtProgress(
+  config: Config,
+  percent: number,
+  today = localDate(),
+): Pick<Config, "startDate" | "endDate"> | null {
+  if (!Number.isFinite(percent) || depositProgress(config, today) === null)
+    return null;
+  const now = dayNumber(today)!;
+  const ratio = clamp(percent, 0, 100) / 100;
+  if (config.customEnd) {
+    const duration = dayNumber(config.endDate)! - dayNumber(config.startDate)!;
+    const start = clamp(
+      now - Math.round(duration * ratio),
+      MIN_DAY,
+      MAX_DAY - duration,
+    );
+    return {
+      startDate: dateAtDay(start),
+      endDate: dateAtDay(start + duration),
+    };
+  }
+  if (!(TERMS as readonly number[]).includes(config.months)) return null;
+  const latestStart = dayNumber(addMonths("2199-12-31", -config.months))!;
+  const rawRatio = (start: number) => {
+    const end = dayNumber(addMonths(dateAtDay(start), config.months))!;
+    return (now - start) / (end - start);
+  };
+  // Calendar months vary in length. Find the nearest whole-day start instead of
+  // treating one month as 30 days or changing a fixed-term deposit to custom dates.
+  let low = MIN_DAY;
+  let high = latestStart;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    if (rawRatio(mid) > ratio) low = mid + 1;
+    else high = mid;
+  }
+  const candidates = [low, Math.max(MIN_DAY, low - 1)];
+  const start = candidates.sort(
+    (a, b) =>
+      Math.abs(clamp(rawRatio(a), 0, 1) - ratio) -
+      Math.abs(clamp(rawRatio(b), 0, 1) - ratio),
+  )[0];
+  const startDate = dateAtDay(start);
+  return { startDate, endDate: addMonths(startDate, config.months) };
+}
+
 export function validate(
   config: Config,
 ): Partial<Record<keyof Config, string>> {

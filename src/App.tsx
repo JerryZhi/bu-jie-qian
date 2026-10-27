@@ -794,8 +794,12 @@ export default function App() {
               <div className="preview-toolbar">
                 <span>
                   <i />
-                  <span className="desktop-instruction">双击内容修改</span>
-                  <span className="touch-instruction">点按内容修改</span>
+                  <span className="desktop-instruction">
+                    双击修改 · 红条可拖动
+                  </span>
+                  <span className="touch-instruction">
+                    点按修改 · 红条可拖动
+                  </span>
                 </span>
                 <button
                   className="text-button"

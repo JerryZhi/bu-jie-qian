@@ -57,6 +57,7 @@ export default function PreviewEditor({
     target: HTMLElement;
   } | null>(null);
   const [patch, setPatch] = useState<Partial<Config>>({});
+  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const editorRef = useRef<HTMLFormElement>(null);
@@ -73,8 +74,8 @@ export default function PreviewEditor({
   }, []);
 
   useEffect(() => {
-    onEditingChange(active !== null);
-  }, [active, onEditingChange]);
+    onEditingChange(active !== null || dragging);
+  }, [active, dragging, onEditingChange]);
 
   useLayoutEffect(() => {
     if (!active) return;
@@ -203,7 +204,7 @@ export default function PreviewEditor({
   }));
 
   function editProps(field: PreviewField): PreviewEditProps {
-    if (disabled) return {};
+    if (disabled || dragging) return {};
     return {
       "data-edit-field": field,
       title: `${desktop ? "双击" : "点按"}修改${labels[field]}`,
@@ -276,6 +277,8 @@ export default function PreviewEditor({
         config={config}
         screenRef={screenRef}
         editProps={editProps}
+        onDateChange={disabled || active ? undefined : onChange}
+        onDraggingChange={setDragging}
       />
       {active &&
         createPortal(

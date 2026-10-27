@@ -9,14 +9,13 @@ import {
 } from "lucide-react";
 import {
   estimate,
-  localDate,
   maturity,
   money,
-  parseDate,
   termLabel,
   validate,
   type Config,
 } from "./domain";
+import DepositTimeline from "./DepositTimeline";
 import "./phone.css";
 
 function Signal({
@@ -52,10 +51,14 @@ export default function PhoneScreen({
   config,
   screenRef,
   editProps = () => ({}),
+  onDateChange,
+  onDraggingChange,
 }: {
   config: Config;
   screenRef: RefObject<HTMLDivElement | null>;
   editProps?: (field: PreviewField) => PreviewEditProps;
+  onDateChange?: (patch: Pick<Config, "startDate" | "endDate">) => void;
+  onDraggingChange?: (dragging: boolean) => void;
 }) {
   const errors = validate(config);
   const values = estimate(config);
@@ -69,19 +72,6 @@ export default function PhoneScreen({
     : termLabel(config.months).replaceAll(" ", "");
   const startLabel = errors.startDate ? "—" : config.startDate;
   const endLabel = errors.endDate ? "—" : end;
-  const startTime = parseDate(config.startDate)?.getTime();
-  const endTime = parseDate(end)?.getTime();
-  const todayTime = parseDate(localDate())!.getTime();
-  const progress =
-    startTime !== undefined && endTime !== undefined && endTime > startTime
-      ? Math.max(
-          0,
-          Math.min(
-            100,
-            ((todayTime - startTime) / (endTime - startTime)) * 100,
-          ),
-        )
-      : 0;
 
   return (
     <div className="phone-screen" ref={screenRef} data-testid="phone-screen">
@@ -281,32 +271,12 @@ export default function PhoneScreen({
             </dd>
           </div>
         </dl>
-        <div className="deposit-timeline">
-          <div
-            className="timeline-track"
-            role="progressbar"
-            aria-label="存款期限进度"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(progress)}
-          >
-            <span style={{ width: `${progress}%` }} />
-          </div>
-          <div className="timeline-labels">
-            <div>
-              <strong>起息日</strong>
-              <span {...editProps("startDate")}>
-                {startLabel.replaceAll("-", ".")}
-              </span>
-            </div>
-            <div>
-              <strong>到期日</strong>
-              <span {...editProps("endDate")}>
-                {endLabel.replaceAll("-", ".")}
-              </span>
-            </div>
-          </div>
-        </div>
+        <DepositTimeline
+          config={config}
+          editProps={editProps}
+          onChange={onDateChange}
+          onDraggingChange={onDraggingChange}
+        />
       </section>
       <div className="phone-section-gap" />
       <section className="renewal-details" aria-label="到期处理">

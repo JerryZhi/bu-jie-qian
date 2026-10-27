@@ -5,6 +5,8 @@ import {
   decodeConfig,
   defaults,
   depositStatus,
+  depositProgress,
+  datesAtProgress,
   estimate,
   maturity,
   parseDate,
@@ -24,6 +26,99 @@ test("visit defaults use local wall-clock time and 16 calendar days earlier", (t
   assert.equal(defaults(new Date(2026, 0, 5, 0, 3)).startDate, "2025-12-20");
   assert.equal(defaults(new Date(2024, 2, 10)).startDate, "2024-02-23");
   assert.equal(now.getDate(), 23);
+});
+
+test("timeline uses elapsed calendar days and clamps future and mature dates", () => {
+  const config = {
+    ...defaults(),
+    startDate: "2024-02-28",
+    endDate: "2024-03-01",
+    customEnd: true,
+  };
+  assert.equal(depositProgress(config, "2024-02-27"), 0);
+  assert.equal(depositProgress(config, "2024-02-28"), 0);
+  assert.equal(depositProgress(config, "2024-02-29"), 50);
+  assert.equal(depositProgress(config, "2024-03-01"), 100);
+  assert.equal(depositProgress(config, "2026-10-27"), 100);
+  assert.equal(depositProgress({ ...config, endDate: config.startDate }), null);
+  assert.equal(depositProgress({ ...config, startDate: "2024-02-30" }), null);
+  assert.equal(depositProgress(config, "bad"), null);
+});
+
+test("dragging fixed terms retains calendar months and finds the nearest day", () => {
+  for (const today of ["2024-02-29", "2026-10-27", "2025-01-31"]) {
+    for (const months of [3, 6, 12, 36, 60]) {
+      const original = { ...defaults(), startDate: "2024-01-31", months };
+      for (const requested of [0, 1, 25, 50, 75, 99, 100]) {
+        const patch = datesAtProgress(original, requested, today)!;
+        const result = { ...original, ...patch };
+        assert.ok(patch);
+        assert.equal(result.customEnd, false);
+        assert.equal(patch.endDate, addMonths(patch.startDate, months));
+        assert.deepEqual(validate(result), {});
+        assert.equal(estimate(result)?.interest, estimate(original)?.interest);
+        const days = estimate(result)!.days;
+        assert.ok(
+          Math.abs(depositProgress(result, today)! - requested) <= 100 / days,
+          `${today} ${months} months ${requested}%`,
+        );
+        if (requested === 0) assert.equal(patch.startDate, today);
+        if (requested === 100) assert.ok(patch.endDate <= today);
+      }
+    }
+  }
+});
+
+test("dragging custom dates preserves total days and interest, including a one-day term", () => {
+  const original = {
+    ...defaults(),
+    startDate: "2024-02-28",
+    endDate: "2024-03-09",
+    customEnd: true,
+  };
+  const patch = datesAtProgress(original, 50, "2026-10-27")!;
+  assert.deepEqual(patch, { startDate: "2026-10-22", endDate: "2026-11-01" });
+  assert.equal(estimate({ ...original, ...patch })?.days, 10);
+  assert.equal(
+    estimate({ ...original, ...patch })?.interest,
+    estimate(original)?.interest,
+  );
+  const oneDay = { ...original, endDate: "2024-02-29" };
+  assert.deepEqual(datesAtProgress(oneDay, 100, "2026-10-27"), {
+    startDate: "2026-10-26",
+    endDate: "2026-10-27",
+  });
+  assert.deepEqual(
+    datesAtProgress(oneDay, -10, "2026-10-27"),
+    datesAtProgress(oneDay, 0, "2026-10-27"),
+  );
+  assert.deepEqual(
+    datesAtProgress(oneDay, 200, "2026-10-27"),
+    datesAtProgress(oneDay, 100, "2026-10-27"),
+  );
+});
+
+test("timeline dragging rejects invalid dates and stays within supported date bounds", () => {
+  const config = defaults();
+  assert.equal(datesAtProgress(config, NaN), null);
+  assert.equal(datesAtProgress({ ...config, startDate: "" }, 50), null);
+  assert.equal(datesAtProgress({ ...config, months: 7 }, 50), null);
+  const fullRange = {
+    ...config,
+    startDate: "1900-01-01",
+    endDate: "2199-12-31",
+    customEnd: true,
+  };
+  for (const percent of [0, 50, 100]) {
+    assert.deepEqual(datesAtProgress(fullRange, percent), {
+      startDate: fullRange.startDate,
+      endDate: fullRange.endDate,
+    });
+    for (const today of ["1900-01-01", "2199-12-31"]) {
+      const patch = datesAtProgress(config, percent, today)!;
+      assert.deepEqual(validate({ ...config, ...patch }), {});
+    }
+  }
 });
 
 test("month-end and leap-year maturities stay in the intended month", () => {
